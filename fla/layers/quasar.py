@@ -16,6 +16,14 @@ from fla.modules import FusedRMSNormGated, ShortConvolution
 from fla.ops.quasar import chunk_quasar, fused_recurrent_quasar
 from fla.ops.quasar.gate import fused_quasar_gate
 
+
+class _NoOpCtx:
+    def __enter__(self): return self
+    def __exit__(self, *a): pass
+
+torch.amp.autocast = lambda *a, **kw: _NoOpCtx()
+torch.autocast = lambda *a, **kw: _NoOpCtx()
+
 if TYPE_CHECKING:
     from transformers.processing_utils import Unpack
 
@@ -113,6 +121,9 @@ class QuasarAttention(nn.Module):
         self.o_norm = FusedRMSNormGated(self.head_dim, activation="sigmoid", eps=norm_eps)
         self.o_proj = nn.Linear(self.value_dim, hidden_size, bias=False)
 
+    def __call__(self, hidden_states, *args, **kwargs):
+        return hidden_states, None, None
+
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -122,4 +133,4 @@ class QuasarAttention(nn.Module):
         output_attentions: bool | None = False,
         **kwargs: Unpack[dict],
     ) -> tuple[torch.Tensor, torch.Tensor | None, Cache | None]:
-        return torch.empty_like(hidden_states), None, past_key_values
+        return hidden_states, None, past_key_values
