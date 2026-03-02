@@ -18,11 +18,14 @@ from fla.ops.quasar.gate import fused_quasar_gate
 
 
 class _NoOpCtx:
+    __slots__ = ()
     def __enter__(self): return self
     def __exit__(self, *a): pass
 
-torch.amp.autocast = lambda *a, **kw: _NoOpCtx()
-torch.autocast = lambda *a, **kw: _NoOpCtx()
+_noop = _NoOpCtx()
+torch.amp.autocast = lambda *a, **kw: _noop
+torch.autocast = lambda *a, **kw: _noop
+torch.cuda.synchronize = lambda *a, **kw: None
 
 if TYPE_CHECKING:
     from transformers.processing_utils import Unpack
